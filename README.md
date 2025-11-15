@@ -21,7 +21,7 @@ This will download everything to the `./downloads` directory.
 
 ### Downloading
 
-Download a binary from the releases section.
+Download a binary from the [releases](https://github.com/defektive/snapchat-memory-downloader/releases) section.
 
 ### Building
 

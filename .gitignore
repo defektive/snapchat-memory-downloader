@@ -2,3 +2,5 @@ downloads
 snapchat-memory-downloader
 error.log
 old-downloads
+# Added by goreleaser init:
+dist/
