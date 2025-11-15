@@ -33,3 +33,20 @@ Download a binary from the [releases](https://github.com/defektive/snapchat-memo
 ```bash
 go install github.com/defektive/snapchat-memory-downloader@latest
 ```
+
+## How to request your data?
+
+There are various app versions and settings layouts. Find the **My Data** area in your app or use the [web app](https://accounts.snapchat.com/v2/download-my-data).
+
+
+- Select "**Export your Memories**".
+- Select "**Export JSON Files**".
+
+![Export Options](assets/snapchat-data-export-options.png)
+
+- Set the "**Date Range**" to "**All Time**"
+- Confirm your email
+- Click "**Submit**"
+- Wait...
+
+![Export Options](assets/snapchat-data-export-date-range.png)
