@@ -16,6 +16,11 @@ snapchat-memory-downloader -f json/memories_history.json
 
 This will download everything to the `./downloads` directory.
 
+### Docker
+
+```bash
+sudo docker run --rm -v `pwd`:/workspace --user 1000  ghcr.io/defektive/snapchat-memory-downloader:latest
+```
 
 ## Install
 
@@ -28,4 +33,3 @@ Download a binary from the [releases](https://github.com/defektive/snapchat-memo
 ```bash
 go install github.com/defektive/snapchat-memory-downloader@latest
 ```
-
