@@ -35,16 +35,11 @@ var errorLog *log.Logger
 var workers = 10
 var downloadDir = "downloads"
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
+// RootCmd represents the base command when called without any subcommands
+var RootCmd = &cobra.Command{
 	Use:   "snapchat-memory-downloader",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Download snapchat memories and add dates to downloaded photoes",
+	Long:  `This allows you to download your snapchat memories faster. It will also add dates to the downloaded images.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
@@ -107,9 +102,9 @@ func worker(id int, jobs <-chan *models.Memory, results chan<- *models.Memory) {
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
+// This is called by main.main(). It only needs to happen once to the RootCmd.
 func Execute() {
-	err := rootCmd.Execute()
+	err := RootCmd.Execute()
 	if err != nil {
 		os.Exit(1)
 	}
@@ -120,13 +115,13 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.snapchat-memory-downloader.yaml)")
+	// RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.snapchat-memory-downloader.yaml)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	rootCmd.Flags().StringP("file", "f", "json/memories_history.json", "memory history json file")
-	rootCmd.Flags().StringVarP(&downloadDir, "dir", "d", downloadDir, "download directory")
-	rootCmd.Flags().IntVarP(&workers, "workers", "w", workers, "Number of download Workers")
+	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	RootCmd.Flags().StringP("file", "f", "json/memories_history.json", "memory history JSON file")
+	RootCmd.Flags().StringVarP(&downloadDir, "dir", "d", downloadDir, "download directory")
+	RootCmd.Flags().IntVarP(&workers, "workers", "w", workers, "Number of download Workers")
 
 }
