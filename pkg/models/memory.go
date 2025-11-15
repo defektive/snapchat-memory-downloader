@@ -1,6 +1,7 @@
 package models
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -9,7 +10,12 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
+
+	exif "github.com/dsoprea/go-exif/v3"
+	exifcommon "github.com/dsoprea/go-exif/v3/common"
+	jpeg "github.com/dsoprea/go-jpeg-image-structure/v2"
 )
 
 type Memory struct {
@@ -45,14 +51,14 @@ func (m *Memory) Save(saveDir string) error {
 
 		if err != nil {
 			// we should retry
-			log.Println("attempt failed", i, err)
+			//log.Println("attempt failed", i, err)
 			time.Sleep(sleepTime)
 			sleepTime = time.Duration(5*i) * time.Second
 			continue
 		} else {
-			if i > 1 {
-				log.Println("attempt succeeded", i)
-			}
+			//if i > 1 {
+			//log.Println("attempt succeeded", i)
+			//}
 			success = true
 			break
 		}
@@ -62,7 +68,27 @@ func (m *Memory) Save(saveDir string) error {
 		return errors.New(fmt.Sprintf("Failed to save to disk: %s", err))
 	}
 
-	return _renameToDetectedType(outputFile)
+	newFileName, err := _renameToDetectedType(outputFile)
+
+	if err != nil {
+		return err
+	}
+
+	ts, err := time.Parse("2006-01-02 15:04:05 UTC", m.Date)
+	if err != nil {
+		return err
+	}
+
+	//if m.MediaType == "Image" && strings.HasSuffix(newFileName, ".zip") {
+	// handle jpgs with pngs
+	//}
+
+	if m.MediaType == "Image" && strings.HasSuffix(newFileName, ".jpg") {
+		// images dont have exif date for when it was created
+		return SetDateIfNone(newFileName, ts)
+	}
+
+	return nil
 }
 
 func (m *Memory) UserId() (string, error) {
@@ -158,91 +184,108 @@ func _saveRemoteFile(urlToSave, outputFileName string) error {
 	return nil
 }
 
-func _renameToDetectedType(outputFileName string) error {
+func _renameToDetectedType(outputFileName string) (string, error) {
 	fileDetect, err := os.Open(outputFileName)
 	defer fileDetect.Close()
 
 	if err != nil {
-		return err
+		return outputFileName, err
 	}
 	// Read the first 512 bytes for content sniffing
 	buffer := make([]byte, 512)
 	_, err = fileDetect.Read(buffer)
 	if err != nil && err != io.EOF {
-		return err
+		return outputFileName, err
 	}
 
 	contentType := http.DetectContentType(buffer)
+	newFileName := outputFileName
 	if contentType == "image/jpeg" {
-		err = os.Rename(outputFileName, outputFileName+".jpg")
+		newFileName = outputFileName + ".jpg"
 	} else if contentType == "video/mp4" {
-		err = os.Rename(outputFileName, outputFileName+".mp4")
+		newFileName = outputFileName + ".mp4"
 	} else if contentType == "application/zip" {
-		err = os.Rename(outputFileName, outputFileName+".zip")
+		newFileName = outputFileName + ".zip"
 	} else {
-		err = os.Rename(outputFileName, outputFileName+".mov")
+		newFileName = outputFileName + ".mov"
 	}
+	err = os.Rename(outputFileName, newFileName)
+	return newFileName, err
+}
+
+const (
+	tagDateTimeOriginal = "DateTimeOriginal"
+	tagDateTime         = "DateTime"
+)
+
+func setTag(rootIB *exif.IfdBuilder, ifdPath, tagName, tagValue string) error {
+	ifdIb, err := exif.GetOrCreateIbFromRootIb(rootIB, ifdPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to get or create IB: %v", err)
+	}
+
+	if err := ifdIb.SetStandardWithName(tagName, tagValue); err != nil {
+		return fmt.Errorf("failed to set DateTime tag: %v", err)
 	}
 
 	return nil
 }
 
-func setExifDateTime(imagePath string, newTime time.Time) error {
-	//
-	//// Parse the JPEG structure
-	//media, err := jpegstructure.NewJpegMediaParser().ParseFile(imagePath)
-	//if err != nil {
-	//	return fmt.Errorf("failed to parse JPEG structure: %w", err)
-	//}
-	//
-	//
-	//sl := media.(*jpegstructure.SegmentList)
-	//// Get the root IFD
-	//exifBuilder, err := sl.ConstructExifBuilder()
-	//if err != nil {
-	//	return fmt.Errorf("failed to get exifBuilder: %w", err)
-	//}
-	//
-	//ifd0Ib, err := exif.GetOrCreateIbFromRootIb(exifBuilder, "IFD0")
-	//if err != nil {
-	//	return fmt.Errorf("failed to get IFD0 from root IB: %w", err)
-	//}
+// SetDateIfNone sets the EXIF DateTime to the given Time unless it has
+// already been defined.
+func SetDateIfNone(filepath string, t time.Time) error {
+	parser := jpeg.NewJpegMediaParser()
+	psl, err := parser.ParseFile(filepath)
+	if err != nil {
+		return fmt.Errorf("Failed to parse JPEG file: %s - %v", filepath, err)
+	}
 
-	//ifd0Ib.SetStandardWithName("DateTimeOriginal", time.Now().)
-	// Format the new time for EXIF
-	//ts := newTime.Format("2006:01:02 15:04:05")
+	sl := psl.(*jpeg.SegmentList)
 
-	//// Set DateTime (ModifyDate) in IFD0
-	//if err := rootIb(exif.IfdPathStandard, exif.TagDateTime, ts); err != nil {
-	//	return fmt.Errorf("failed to set DateTime tag: %w", err)
-	//}
-	//
-	//// Set DateTimeOriginal in ExifIFD
-	//exifIfd, err := rootIb.ChildExifIfd()
-	//if err != nil {
-	//	return fmt.Errorf("failed to get ExifIFD: %w", err)
-	//}
-	//if err := exifIfd.SetTag(exif.IfdPathStandard, exif.TagDateTimeOriginal, ts); err != nil {
-	//	return fmt.Errorf("failed to set DateTimeOriginal tag: %w", err)
-	//}
-	//
-	//// Set DateTimeDigitized in ExifIFD (optional)
-	//if err := exifIfd.SetTag(exif.IfdPathStandard, exif.TagDateTimeDigitized, ts); err != nil {
-	//	return fmt.Errorf("failed to set DateTimeDigitized tag: %w", err)
-	//}
-	//
-	//// Write the modified image to a new file or overwrite the original
-	//outputFile, err := os.Create("output_" + imagePath)
-	//if err != nil {
-	//	return fmt.Errorf("failed to create output file: %w", err)
-	//}
-	//defer outputFile.Close()
-	//
-	//if err := media.Write(outputFile); err != nil {
-	//	return fmt.Errorf("failed to write modified JPEG: %w", err)
-	//}
+	rootIb, err := sl.ConstructExifBuilder()
+	if err != nil {
+		im, err := exifcommon.NewIfdMappingWithStandard()
+		if err != nil {
+			log.Fatal(err)
+		}
+		ti := exif.NewTagIndex()
+		if err := exif.LoadStandardTags(ti); err != nil {
+			return fmt.Errorf("Failed to load standard tags: %v", err)
+		}
+
+		rootIb = exif.NewIfdBuilder(im, ti, exifcommon.IfdStandardIfdIdentity, exifcommon.EncodeDefaultByteOrder)
+	}
+
+	// Form our timestamp string
+	ts := exifcommon.ExifFullTimestampString(t)
+
+	// Set DateTime
+	ifdPath := "IFD0"
+	if err := setTag(rootIb, ifdPath, tagDateTime, ts); err != nil {
+		return fmt.Errorf("Failed to set tag %v: %v", tagDateTime, err)
+	}
+
+	// Set DateTimeOriginal
+	ifdPath = "IFD/Exif"
+	if err := setTag(rootIb, ifdPath, tagDateTimeOriginal, ts); err != nil {
+		return fmt.Errorf("Failed to set tag %v: %v", tagDateTime, err)
+	}
+
+	// Update the exif segment.
+	if err := sl.SetExif(rootIb); err != nil {
+		return fmt.Errorf("Failed to set EXIF to jpeg: %v", err)
+	}
+
+	// Write the modified file
+	b := new(bytes.Buffer)
+	if err := sl.Write(b); err != nil {
+		return fmt.Errorf("Failed to create JPEG data: %v", err)
+	}
+
+	// Save the file
+	if err := os.WriteFile(filepath, b.Bytes(), 0644); err != nil {
+		return fmt.Errorf("Failed to write JPEG file: %v", err)
+	}
 
 	return nil
 }
