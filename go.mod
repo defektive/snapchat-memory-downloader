@@ -3,7 +3,7 @@ module github.com/defektive/snapchat-memory-downloader
 go 1.25.3
 
 require (
-	github.com/analog-substance/util v1.1.6
+	github.com/analog-substance/util v1.1.7
 	github.com/dsoprea/go-exif/v3 v3.0.1
 	github.com/dsoprea/go-jpeg-image-structure/v2 v2.0.0-20221012074422-4f3f7e934102
 	github.com/schollz/progressbar/v3 v3.18.0
@@ -22,8 +22,8 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/spf13/pflag v1.0.9 // indirect
-	golang.org/x/net v0.40.0 // indirect
+	github.com/spf13/pflag v1.0.10 // indirect
+	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/term v0.37.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
